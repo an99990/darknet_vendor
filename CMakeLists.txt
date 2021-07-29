@@ -21,25 +21,25 @@ endif()
 # Same version as Debian Buster
 set(darknet_git_tag "61c9d02ec461e30d55762ec7669d6a1d3c356fb2")
 
-FetchContent_Declare(darknet-download
-  GIT_REPOSITORY
-    "https://github.com/pjreddie/darknet.git"
-  GIT_TAG
-    ${darknet_git_tag}
-)
+#FetchContent_Declare(darknet-download
+#  GIT_REPOSITORY
+#    "https://github.com/pjreddie/darknet.git"
+#  #GIT_TAG
+#  #  ${darknet_git_tag}
+#)
 
-FetchContent_GetProperties(darknet-download)
-if(NOT darknet-download_POPULATED)
-  FetchContent_Populate(darknet-download)
-endif()
+#FetchContent_GetProperties(darknet-download)
+#if(NOT darknet-download_POPULATED)
+#  FetchContent_Populate(darknet-download)
+#endif()
 
-set(darknet_src_dir "${darknet-download_SOURCE_DIR}")
+set(darknet_src_dir "${CMAKE_CURRENT_LIST_DIR}/darknet")
 
 ####################
 # Classify files
 ####################
 set(darknet_public_headers
-  "${CMAKE_CURRENT_BINARY_DIR}/darknet-src/include/darknet.h"
+  "${CMAKE_CURRENT_LIST_DIR}/darknet/include/darknet.h"
 )
 
 set(darknet_cuda_sources
@@ -168,9 +168,14 @@ if(DARKNET_CUDA)
   target_compile_options(darknet PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:${DARKNET_VENDOR_CUDA_FLAGS}>
   )
+  target_include_directories(darknet PUBLIC ${CUDA_INCLUDE_DIRS})
+  
   target_compile_definitions(darknet PUBLIC GPU=1)
   target_link_libraries(darknet PUBLIC
-    cuda cudart cublas curand
+    cuda 
+    /usr/local/cuda/lib64/libcudart.so 
+    /usr/local/cuda/lib64/libcublas.so 
+    /usr/local/cuda/lib64/libcurand.so
   )
 else()  # not using CUDA
   add_library(darknet SHARED ${darknet_lib_c_sources} ${darknet_lib_cpp_sources})
@@ -215,6 +220,7 @@ configure_file("include/darknet_vendor/version.h.in" "version.h" @ONLY)
 # Darknet Executable
 ####################
 add_executable(darknet_exec ${darknet_exec_c_sources})
+target_include_directories(darknet_exec PRIVATE ${CUDA_INCLUDE_DIRS})
 target_link_libraries(darknet_exec PUBLIC darknet)
 set_target_properties(darknet_exec PROPERTIES OUTPUT_NAME "darknet")
 
